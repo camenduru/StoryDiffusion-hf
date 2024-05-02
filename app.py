@@ -40,7 +40,7 @@ global models_dict
 use_va = True
 models_dict = {
 #    "Juggernaut": "RunDiffusion/Juggernaut-XL-v8",
-#    "RealVision": "SG161222/RealVisXL_V4.0" ,
+   "RealVision": "SG161222/RealVisXL_V4.0" ,
 #    "SDXL":"stabilityai/stable-diffusion-xl-base-1.0" ,
    "Unstable": "stablediffusionapi/sdxl-unstable-diffusers-y"
 }
@@ -431,14 +431,14 @@ global sd_model_path
 sd_model_path = models_dict["Unstable"]#"SG161222/RealVisXL_V4.0"
 use_safetensors= False
 ### LOAD Stable Diffusion Pipeline
-pipe1 = StableDiffusionXLPipeline.from_pretrained(sd_model_path, torch_dtype=torch.float16, use_safetensors= use_safetensors)
-pipe1 = pipe1.to("cpu")
-pipe1.enable_freeu(s1=0.6, s2=0.4, b1=1.1, b2=1.2)
-# pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
-pipe1.scheduler.set_timesteps(50)
+# pipe1 = StableDiffusionXLPipeline.from_pretrained(sd_model_path, torch_dtype=torch.float16, use_safetensors= use_safetensors)
+# pipe1 = pipe1.to("cpu")
+# pipe1.enable_freeu(s1=0.6, s2=0.4, b1=1.1, b2=1.2)
+# # pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
+# pipe1.scheduler.set_timesteps(50)
 ### 
 pipe2 = PhotoMakerStableDiffusionXLPipeline.from_pretrained(
-    sd_model_path, torch_dtype=torch.float16, use_safetensors=use_safetensors)
+    models_dict["Unstable"], torch_dtype=torch.float16, use_safetensors=use_safetensors)
 pipe2 = pipe2.to("cpu")
 pipe2.load_photomaker_adapter(
     os.path.dirname(photomaker_path),
@@ -450,6 +450,24 @@ pipe2 = pipe2.to("cpu")
 pipe2.enable_freeu(s1=0.6, s2=0.4, b1=1.1, b2=1.2)
 pipe2.fuse_lora()
 
+pipe4 = PhotoMakerStableDiffusionXLPipeline.from_pretrained(
+    models_dict["RealVision"], torch_dtype=torch.float16, use_safetensors=use_safetensors)
+pipe4 = pipe4.to("cpu")
+pipe4.load_photomaker_adapter(
+    os.path.dirname(photomaker_path),
+    subfolder="",
+    weight_name=os.path.basename(photomaker_path),
+    trigger_word="img"  # define the trigger word
+)
+pipe4 = pipe4.to("cpu")
+pipe4.enable_freeu(s1=0.6, s2=0.4, b1=1.1, b2=1.2)
+pipe4.fuse_lora()
+
+# pipe3 = StableDiffusionXLPipeline.from_pretrained("SG161222/RealVisXL_V4.0", torch_dtype=torch.float16)
+# pipe3 = pipe3.to("cpu")
+# pipe3.enable_freeu(s1=0.6, s2=0.4, b1=1.1, b2=1.2)
+# # pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
+# pipe3.scheduler.set_timesteps(50)
 ######### Gradio Fuction #############
 
 def swap_to_gallery(images):
@@ -489,8 +507,8 @@ def process_generation(_sd_type,_model_type,_upload_images, _num_steps,style_nam
         raise gr.Error("Please add the triger word \" img \"  behind the class word you want to customize, such as: man img or woman img")
     if _upload_images is None and _model_type != "original":
         raise gr.Error(f"Cannot find any input face image!")
-    if len(prompt_array.splitlines()) > 10:
-        raise gr.Error(f"No more than 10 prompts in huggface demo for Speed! But found {len(prompt_array)} prompts!")
+    if len(prompt_array.splitlines()) > 6:
+        raise gr.Error(f"No more than 6 prompts in huggface demo for Speed! But found {len(prompt_array)} prompts!")
     global sa32, sa64,id_length,total_length,attn_procs,unet,cur_model_type,device
     global write
     global cur_step,attn_count
@@ -501,13 +519,24 @@ def process_generation(_sd_type,_model_type,_upload_images, _num_steps,style_nam
     global sd_model_path,models_dict
     sd_model_path = models_dict[_sd_type]
     use_safe_tensor = True
+    if  style_name == "(No style)":
+        sd_model_path = models_dict["RealVision"]
     if _model_type == "original":
-        pipe = pipe1.to(device)
+        pipe = StableDiffusionXLPipeline.from_pretrained("SG161222/RealVisXL_V4.0", torch_dtype=torch.float16)
+        pipe = pipe.to(device)
+        pipe.enable_freeu(s1=0.6, s2=0.4, b1=1.1, b2=1.2)
+        # pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
+        pipe.scheduler.set_timesteps(50)
         set_attention_processor(pipe.unet,id_length_,is_ipadapter = False)
     elif _model_type == "Photomaker":
-        pipe = pipe2.to(device)
-        pipe.id_encoder.to(device)
-        set_attention_processor(pipe.unet,id_length_,is_ipadapter = False)
+        if _sd_type != "RealVision":
+            pipe = pipe2.to(device)
+            pipe.id_encoder.to(device)
+            set_attention_processor(pipe.unet,id_length_,is_ipadapter = False)
+        else:
+            pipe = pipe4.to(device)
+            pipe.id_encoder.to(device)
+            set_attention_processor(pipe.unet,id_length_,is_ipadapter = False)
     else:
         raise NotImplementedError("You should choice between original and Photomaker!",f"But you choice {_model_type}")
         ##### ########################
@@ -569,10 +598,7 @@ def process_generation(_sd_type,_model_type,_upload_images, _num_steps,style_nam
         captions = [caption.split('#')[-1] if "#" in caption else caption for caption in captions]
         from PIL import ImageFont
         total_results = get_comic(id_images + real_images, _comic_type,captions= captions,font=ImageFont.truetype("./fonts/Inkfree.ttf", int(45))) + total_results
-    if _model_type == "original":
-        pipe = pipe1.to("cpu")
-        set_attention_processor(pipe.unet,id_length_,is_ipadapter = False)
-    elif _model_type == "Photomaker":
+    if _model_type == "Photomaker":
         pipe = pipe2.to("cpu")
         pipe.id_encoder.to("cpu")
         set_attention_processor(pipe.unet,id_length_,is_ipadapter = False)
