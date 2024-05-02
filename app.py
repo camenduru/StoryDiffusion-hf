@@ -403,7 +403,7 @@ version = r"""
 <h5 >1. Support image ref image. (Cartoon Ref image is not support now)</h5>
 <h5 >2. Support Typesetting Style and Captioning.(By default, the prompt is used as the caption for each image. If you need to change the caption, add a # at the end of each line. Only the part after the # will be added as a caption to the image.)</h5>
 <h5 >3. [NC]symbol (The [NC] symbol is used as a flag to indicate that no characters should be present in the generated scene images. If you want do that, prepend the "[NC]" at the beginning of the line. For example, to generate a scene of falling leaves without any character, write: "[NC] The leaves are falling."),Currently, support is only using Textual Description</h5>
-<h5 align="center">Tips: </h4>
+<h5 align="center">Tips: Not Ready Now! Just Test!</h4>
 """
 #################################################
 global attn_count, total_count, id_length, total_length,cur_step, cur_model_type
@@ -685,7 +685,7 @@ with gr.Blocks(css=css) as demo:
                     )
                     G_width = gr.Slider( 
                         label="width",
-                        minimum=256,
+                        minimum=1024,
                         maximum=1024,
                         step=32,
                         value=1024,
@@ -740,7 +740,7 @@ with gr.Blocks(css=css) as demo:
                                 "work in the company",
                                 "Take a walk next to the company at noon",
                                 "lying in bed at night"]),
-                                "(No style)",  "Using Ref Images",get_image_path_list('./examples/taylor'),768,768
+                                "(No style)",  "Using Ref Images",get_image_path_list('./examples/taylor'),1024,1024
                 ],
                 [0,0.5,0.5,2,"a man, wearing black jacket",
                    "bad anatomy, bad hands, missing fingers, extra fingers, three hands, three legs, bad arms, missing legs, missing arms, poorly drawn face, bad face, fused face, cloned face, three crus, fused feet, fused thigh, extra crus, ugly fingers, horn, cartoon, cg, 3d, unreal, animate, amputation, disconnected limbs",
@@ -751,7 +751,7 @@ with gr.Blocks(css=css) as demo:
                                 "laughing happily",
                                 "lying in bed at night"
                                 ]),
-                                "(No style)","Only Using Textual Description",get_image_path_list('./examples/taylor'),768,768
+                                "(No style)","Only Using Textual Description",get_image_path_list('./examples/taylor'),1024,1024
                 ],
                 [0,0.3,0.5,2,"a girl, wearing white shirt, black skirt, black tie, yellow hair",
                    "bad anatomy, bad hands, missing fingers, extra fingers, three hands, three legs, bad arms, missing legs, missing arms, poorly drawn face, bad face, fused face, cloned face, three crus, fused feet, fused thigh, extra crus, ugly fingers, horn, cartoon, cg, 3d, unreal, animate, amputation, disconnected limbs",
@@ -766,7 +766,7 @@ with gr.Blocks(css=css) as demo:
                             "[NC]The brown squirrel appear.",
                             "is very happy # She is very happy to see the squirrel again",
                             "[NC]The brown squirrel takes the cracker and scampers up a tree. # She gives the squirrel cracker"]),
-                    "Japanese Anime","Only Using Textual Description",get_image_path_list('./examples/taylor'),768,768
+                    "Japanese Anime","Only Using Textual Description",get_image_path_list('./examples/taylor'),1024,1024
                 ]
                 ],
         inputs=[seed_, sa32_, sa64_, id_length_,  general_prompt, negative_prompt, prompt_array,style,model_type,files,G_height,G_width],
