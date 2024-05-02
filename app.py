@@ -26,6 +26,7 @@ import torch.nn.functional as F
 from utils.gradio_utils import cal_attn_mask_xl
 import copy
 import os
+from huggingface_hub import hf_hub_download
 from diffusers.utils import load_image
 from utils.utils import get_comic
 from utils.style_template import styles
@@ -35,14 +36,14 @@ os.environ["no_proxy"] = "localhost,127.0.0.1,::1"
 STYLE_NAMES = list(styles.keys())
 DEFAULT_STYLE_NAME = "Japanese Anime"
 global models_dict
-use_va = False
+use_va = True
 models_dict = {
 #    "Juggernaut": "RunDiffusion/Juggernaut-XL-v8",
 #    "RealVision": "SG161222/RealVisXL_V4.0" ,
 #    "SDXL":"stabilityai/stable-diffusion-xl-base-1.0" ,
-   "Unstable": "/mnt/bn/yupengdata2/projects/PhotoMaker/sdxl-unstable-diffusers-y"
+   "Unstable": "stablediffusionapi/sdxl-unstable-diffusers-y"
 }
-photomaker_path =  "/mnt/bn/yupengdata2/projects/PhotoMaker/photomaker-v1.bin"
+photomaker_path =  hf_hub_download(repo_id="TencentARC/PhotoMaker", filename="photomaker-v1.bin", repo_type="model")
 MAX_SEED = np.iinfo(np.int32).max
 def setup_seed(seed):
     torch.manual_seed(seed)
