@@ -529,7 +529,7 @@ def process_generation(_sd_type,_model_type,_upload_images, _num_steps,style_nam
         # pipe.scheduler.set_timesteps(50)
         set_attention_processor(pipe.unet,id_length_,is_ipadapter = False)
     elif _model_type == "Photomaker":
-        if _sd_type != "RealVision":
+        if _sd_type != "RealVision" and style_name != "(No style)":
             pipe = pipe2.to(device)
             pipe.id_encoder.to(device)
             set_attention_processor(pipe.unet,id_length_,is_ipadapter = False)
@@ -732,7 +732,7 @@ with gr.Blocks(css=css) as demo:
 
     gr.Examples(
         examples=[
-            [1,0.5,0.5,3,"a woman img, wearing a white T-shirt, blue loose hair",
+            [1,0.5,0.5,2,"a woman img, wearing a white T-shirt, blue loose hair",
                    "bad anatomy, bad hands, missing fingers, extra fingers, three hands, three legs, bad arms, missing legs, missing arms, poorly drawn face, bad face, fused face, cloned face, three crus, fused feet, fused thigh, extra crus, ugly fingers, horn, cartoon, cg, 3d, unreal, animate, amputation, disconnected limbs",
                    array2string(["wake up in the bed",
                                 "have breakfast",
