@@ -11,3 +11,4 @@ safetensors
 omegaconf
 peft
 spaces==0.19.4
+Pillow==9.5.0
