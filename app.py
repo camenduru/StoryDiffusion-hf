@@ -110,7 +110,7 @@ class SpatialAttnProcessor2_0(torch.nn.Module):
             encoder_hidden_states = torch.cat((self.id_bank[cur_step][0].to(self.device),hidden_states[:1],self.id_bank[cur_step][1].to(self.device),hidden_states[1:]))
         # 判断随机数是否大于0.5
         if cur_step <5:
-            hidden_states = self.__call2__(attn, hidden_states,encoder_hidden_states,attention_mask,temb)
+            hidden_states = self.__call2__(attn, hidden_states,None,attention_mask,temb)
         else:   # 256 1024 4096
             random_number = random.random()
             if cur_step <20:
