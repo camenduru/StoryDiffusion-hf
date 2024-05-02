@@ -526,7 +526,7 @@ def process_generation(_sd_type,_model_type,_upload_images, _num_steps,style_nam
         pipe = pipe.to(device)
         pipe.enable_freeu(s1=0.6, s2=0.4, b1=1.1, b2=1.2)
         # pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
-        pipe.scheduler.set_timesteps(50)
+        # pipe.scheduler.set_timesteps(50)
         set_attention_processor(pipe.unet,id_length_,is_ipadapter = False)
     elif _model_type == "Photomaker":
         if _sd_type != "RealVision":
@@ -666,7 +666,7 @@ with gr.Blocks(css=css) as demo:
                     #sa16_ = gr.Slider(label=" (The degree of Paired Attention at 16 x 16 self-attention layers) ", minimum=0, maximum=1., value=0.3, step=0.1)
                     sa32_ = gr.Slider(label=" (The degree of Paired Attention at 32 x 32 self-attention layers) ", minimum=0, maximum=1., value=0.7, step=0.1)
                     sa64_ = gr.Slider(label=" (The degree of Paired Attention at 64 x 64 self-attention layers) ", minimum=0, maximum=1., value=0.7, step=0.1)
-                    id_length_ = gr.Slider(label= "Number of id images in total images" , minimum=2, maximum=4, value=2, step=1)
+                    id_length_ = gr.Slider(label= "Number of id images in total images" , minimum=2, maximum=2, value=2, step=1)
                     # total_length_ = gr.Slider(label= "Number of total images", minimum=1, maximum=20, value=1, step=1)
                     seed_ = gr.Slider(label="Seed", minimum=-1, maximum=MAX_SEED, value=0, step=1)
                     num_steps = gr.Slider( 
@@ -679,16 +679,16 @@ with gr.Blocks(css=css) as demo:
                     G_height = gr.Slider( 
                         label="height",
                         minimum=256,
-                        maximum=768,
+                        maximum=1024,
                         step=32,
-                        value=768,
+                        value=1024,
                     )
                     G_width = gr.Slider( 
                         label="width",
                         minimum=256,
-                        maximum=768,
+                        maximum=1024,
                         step=32,
-                        value=768,
+                        value=1024,
                     )
                     comic_type = gr.Radio(["No typesetting (default)", "Four Pannel", "Classic Comic Style"], value = "Classic Comic Style", label="Typesetting Style", info="Select the typesetting style ")
                     guidance_scale = gr.Slider(
