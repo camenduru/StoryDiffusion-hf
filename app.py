@@ -451,7 +451,7 @@ pipe2.enable_freeu(s1=0.6, s2=0.4, b1=1.1, b2=1.2)
 pipe2.fuse_lora()
 
 pipe4 = PhotoMakerStableDiffusionXLPipeline.from_pretrained(
-    models_dict["RealVision"], torch_dtype=torch.float16, use_safetensors=use_safetensors)
+    models_dict["RealVision"], torch_dtype=torch.float16, use_safetensors=True)
 pipe4 = pipe4.to("cpu")
 pipe4.load_photomaker_adapter(
     os.path.dirname(photomaker_path),
@@ -522,7 +522,7 @@ def process_generation(_sd_type,_model_type,_upload_images, _num_steps,style_nam
     if  style_name == "(No style)":
         sd_model_path = models_dict["RealVision"]
     if _model_type == "original":
-        pipe = StableDiffusionXLPipeline.from_pretrained("SG161222/RealVisXL_V4.0", torch_dtype=torch.float16)
+        pipe = StableDiffusionXLPipeline.from_pretrained(sd_model_path, torch_dtype=torch.float16)
         pipe = pipe.to(device)
         pipe.enable_freeu(s1=0.6, s2=0.4, b1=1.1, b2=1.2)
         # pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
