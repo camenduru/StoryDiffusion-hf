@@ -504,6 +504,7 @@ def process_generation(_sd_type,_model_type,_upload_images, _num_steps,style_nam
         set_attention_processor(pipe.unet,id_length_,is_ipadapter = False)
     elif _model_type == "Photomaker":
         pipe = pipe2
+        pipe2.id_encoder.to("cuda")
         set_attention_processor(pipe.unet,id_length_,is_ipadapter = False)
     else:
         raise NotImplementedError("You should choice between original and Photomaker!",f"But you choice {_model_type}")
