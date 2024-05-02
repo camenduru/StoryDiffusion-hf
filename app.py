@@ -1,5 +1,6 @@
 from email.policy import default
 import gradio as gr
+import spaces
 import numpy as np
 import torch
 import requests
