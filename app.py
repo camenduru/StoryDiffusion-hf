@@ -482,7 +482,7 @@ def change_visiale_by_model_type(_model_type):
 
 
 ######### Image Generation ##############
-@spaces.GPU
+@spaces.GPU(duration=200)
 def process_generation(_sd_type,_model_type,_upload_images, _num_steps,style_name, _Ip_Adapter_Strength ,_style_strength_ratio, guidance_scale, seed_,  sa32_, sa64_, id_length_,  general_prompt, negative_prompt,prompt_array,G_height,G_width,_comic_type):
     _model_type = "Photomaker" if _model_type == "Using Ref Images" else "original"
     if _model_type == "Photomaker" and "img" not in general_prompt:
