@@ -489,8 +489,7 @@ def process_generation(_sd_type,_model_type,_upload_images, _num_steps,style_nam
         raise gr.Error("Please add the triger word \" img \"  behind the class word you want to customize, such as: man img or woman img")
     if _upload_images is None and _model_type != "original":
         raise gr.Error(f"Cannot find any input face image!")
-    if len(prompt_array) > 10:
-        print(prompt_array)
+    if len(prompt_array.splitlines()) > 10:
         raise gr.Error(f"No more than 10 prompts in huggface demo for Speed! But found {len(prompt_array)} prompts!")
     global sa32, sa64,id_length,total_length,attn_procs,unet,cur_model_type,device
     global write
