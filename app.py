@@ -1,4 +1,5 @@
 from email.policy import default
+from json import encoder
 import gradio as gr
 import spaces
 import numpy as np
@@ -103,17 +104,18 @@ class SpatialAttnProcessor2_0(torch.nn.Module):
         global sa32, sa64
         global write
         global height,width
+        global num_steps
         if write:
             # print(f"white:{cur_step}")
             self.id_bank[cur_step] = [hidden_states[:self.id_length], hidden_states[self.id_length:]]
         else:
             encoder_hidden_states = torch.cat((self.id_bank[cur_step][0].to(self.device),hidden_states[:1],self.id_bank[cur_step][1].to(self.device),hidden_states[1:]))
         # 判断随机数是否大于0.5
-        if cur_step <5:
-            hidden_states = self.__call2__(attn, hidden_states,encoder_hidden_states,attention_mask,temb)
+        if cur_step <0.1* num_steps:
+            hidden_states = self.__call2__(attn, hidden_states,None,attention_mask,temb)
         else:   # 256 1024 4096
             random_number = random.random()
-            if cur_step <20:
+            if cur_step <0.4 * num_steps:
                 rand_num = 0.3
             else:
                 rand_num = 0.1
@@ -403,7 +405,7 @@ version = r"""
 <h5 >1. Support image ref image. (Cartoon Ref image is not support now)</h5>
 <h5 >2. Support Typesetting Style and Captioning.(By default, the prompt is used as the caption for each image. If you need to change the caption, add a # at the end of each line. Only the part after the # will be added as a caption to the image.)</h5>
 <h5 >3. [NC]symbol (The [NC] symbol is used as a flag to indicate that no characters should be present in the generated scene images. If you want do that, prepend the "[NC]" at the beginning of the line. For example, to generate a scene of falling leaves without any character, write: "[NC] The leaves are falling."),Currently, support is only using Textual Description</h5>
-<h5 align="center">Tips: Not Ready Now! Just Test!</h4>
+<h5>Tips: Not Ready Now! Just Test! It's better to use prompts to assist in controlling the character's attire. Depending on the limited code integration time, there might be some undiscovered bugs. If you find that a particular generation result is significantly poor, please email me (ypzhousdu@gmail.com)  Thank you very much.</h4>
 """
 #################################################
 global attn_count, total_count, id_length, total_length,cur_step, cur_model_type
@@ -500,7 +502,7 @@ def change_visiale_by_model_type(_model_type):
 
 
 ######### Image Generation ##############
-@spaces.GPU(duration=60)
+@spaces.GPU(duration=90)
 def process_generation(_sd_type,_model_type,_upload_images, _num_steps,style_name, _Ip_Adapter_Strength ,_style_strength_ratio, guidance_scale, seed_,  sa32_, sa64_, id_length_,  general_prompt, negative_prompt,prompt_array,G_height,G_width,_comic_type):
     _model_type = "Photomaker" if _model_type == "Using Ref Images" else "original"
     if _model_type == "Photomaker" and "img" not in general_prompt:
@@ -510,14 +512,16 @@ def process_generation(_sd_type,_model_type,_upload_images, _num_steps,style_nam
     if len(prompt_array.splitlines()) > 6:
         raise gr.Error(f"No more than 6 prompts in huggface demo for Speed! But found {len(prompt_array)} prompts!")
     global sa32, sa64,id_length,total_length,attn_procs,unet,cur_model_type,device
+    global num_steps
     global write
     global cur_step,attn_count
     global height,width
     height = G_height
     width = G_width
-    global pipe1,pipe2
+    global pipe2,pipe4
     global sd_model_path,models_dict
     sd_model_path = models_dict[_sd_type]
+    num_steps =_num_steps
     use_safe_tensor = True
     if  style_name == "(No style)":
         sd_model_path = models_dict["RealVision"]
@@ -666,15 +670,15 @@ with gr.Blocks(css=css) as demo:
                     #sa16_ = gr.Slider(label=" (The degree of Paired Attention at 16 x 16 self-attention layers) ", minimum=0, maximum=1., value=0.3, step=0.1)
                     sa32_ = gr.Slider(label=" (The degree of Paired Attention at 32 x 32 self-attention layers) ", minimum=0, maximum=1., value=0.7, step=0.1)
                     sa64_ = gr.Slider(label=" (The degree of Paired Attention at 64 x 64 self-attention layers) ", minimum=0, maximum=1., value=0.7, step=0.1)
-                    id_length_ = gr.Slider(label= "Number of id images in total images" , minimum=2, maximum=2, value=2, step=1)
+                    id_length_ = gr.Slider(label= "Number of id images in total images" , minimum=2, maximum=4, value=3, step=1)
                     # total_length_ = gr.Slider(label= "Number of total images", minimum=1, maximum=20, value=1, step=1)
                     seed_ = gr.Slider(label="Seed", minimum=-1, maximum=MAX_SEED, value=0, step=1)
                     num_steps = gr.Slider( 
                         label="Number of sample steps",
-                        minimum=20,
+                        minimum=25,
                         maximum=50,
                         step=1,
-                        value=25,
+                        value=50,
                     )
                     G_height = gr.Slider( 
                         label="height",
@@ -685,7 +689,7 @@ with gr.Blocks(css=css) as demo:
                     )
                     G_width = gr.Slider( 
                         label="width",
-                        minimum=1024,
+                        minimum=256,
                         maximum=1024,
                         step=32,
                         value=1024,
@@ -732,7 +736,7 @@ with gr.Blocks(css=css) as demo:
 
     gr.Examples(
         examples=[
-            [1,0.5,0.5,2,"a woman img, wearing a white T-shirt, blue loose hair",
+            [1,0.5,0.5,3,"a woman img, wearing a white T-shirt, blue loose hair",
                    "bad anatomy, bad hands, missing fingers, extra fingers, three hands, three legs, bad arms, missing legs, missing arms, poorly drawn face, bad face, fused face, cloned face, three crus, fused feet, fused thigh, extra crus, ugly fingers, horn, cartoon, cg, 3d, unreal, animate, amputation, disconnected limbs",
                    array2string(["wake up in the bed",
                                 "have breakfast",
@@ -740,9 +744,9 @@ with gr.Blocks(css=css) as demo:
                                 "work in the company",
                                 "Take a walk next to the company at noon",
                                 "lying in bed at night"]),
-                                "(No style)",  "Using Ref Images",get_image_path_list('./examples/taylor'),1024,1024
+                                "Japanese Anime",  "Using Ref Images",get_image_path_list('./examples/taylor'),768,768
                 ],
-                [0,0.5,0.5,2,"a man, wearing black jacket",
+                [0,0.5,0.5,3,"a man, wearing black jacket",
                    "bad anatomy, bad hands, missing fingers, extra fingers, three hands, three legs, bad arms, missing legs, missing arms, poorly drawn face, bad face, fused face, cloned face, three crus, fused feet, fused thigh, extra crus, ugly fingers, horn, cartoon, cg, 3d, unreal, animate, amputation, disconnected limbs",
                    array2string(["wake up in the bed",
                                 "have breakfast",
@@ -751,9 +755,9 @@ with gr.Blocks(css=css) as demo:
                                 "laughing happily",
                                 "lying in bed at night"
                                 ]),
-                                "(No style)","Only Using Textual Description",get_image_path_list('./examples/taylor'),1024,1024
+                                "Japanese Anime","Only Using Textual Description",get_image_path_list('./examples/taylor'),768,768
                 ],
-                [0,0.3,0.5,2,"a girl, wearing white shirt, black skirt, black tie, yellow hair",
+                [0,0.3,0.5,3,"a girl, wearing white shirt, black skirt, black tie, yellow hair",
                    "bad anatomy, bad hands, missing fingers, extra fingers, three hands, three legs, bad arms, missing legs, missing arms, poorly drawn face, bad face, fused face, cloned face, three crus, fused feet, fused thigh, extra crus, ugly fingers, horn, cartoon, cg, 3d, unreal, animate, amputation, disconnected limbs",
                     array2string([
                             "at home #at home, began to go to drawing",
@@ -766,7 +770,7 @@ with gr.Blocks(css=css) as demo:
                             "[NC]The brown squirrel appear.",
                             "is very happy # She is very happy to see the squirrel again",
                             "[NC]The brown squirrel takes the cracker and scampers up a tree. # She gives the squirrel cracker"]),
-                    "Japanese Anime","Only Using Textual Description",get_image_path_list('./examples/taylor'),1024,1024
+                    "Japanese Anime","Only Using Textual Description",get_image_path_list('./examples/taylor'),768,768
                 ]
                 ],
         inputs=[seed_, sa32_, sa64_, id_length_,  general_prompt, negative_prompt, prompt_array,style,model_type,files,G_height,G_width],
