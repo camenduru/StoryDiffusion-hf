@@ -490,7 +490,8 @@ def process_generation(_sd_type,_model_type,_upload_images, _num_steps,style_nam
     if _upload_images is None and _model_type != "original":
         raise gr.Error(f"Cannot find any input face image!")
     if len(prompt_array) > 10:
-        raise gr.Error(f"No more than 10 prompts in huggface demo for Speed!")
+        print(prompt_array)
+        raise gr.Error(f"No more than 10 prompts in huggface demo for Speed! But found {len(prompt_array)} prompts!")
     global sa32, sa64,id_length,total_length,attn_procs,unet,cur_model_type,device
     global write
     global cur_step,attn_count
