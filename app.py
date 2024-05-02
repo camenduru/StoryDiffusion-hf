@@ -432,21 +432,21 @@ sd_model_path = models_dict["Unstable"]#"SG161222/RealVisXL_V4.0"
 use_safetensors= False
 ### LOAD Stable Diffusion Pipeline
 pipe1 = StableDiffusionXLPipeline.from_pretrained(sd_model_path, torch_dtype=torch.float16, use_safetensors= use_safetensors)
-pipe1 = pipe1.to("cuda")
+pipe1 = pipe1.to("cpu")
 pipe1.enable_freeu(s1=0.6, s2=0.4, b1=1.1, b2=1.2)
 # pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
 pipe1.scheduler.set_timesteps(50)
 ### 
 pipe2 = PhotoMakerStableDiffusionXLPipeline.from_pretrained(
     sd_model_path, torch_dtype=torch.float16, use_safetensors=use_safetensors)
-pipe2 = pipe2.to("cuda")
+pipe2 = pipe2.to("cpu")
 pipe2.load_photomaker_adapter(
     os.path.dirname(photomaker_path),
     subfolder="",
     weight_name=os.path.basename(photomaker_path),
     trigger_word="img"  # define the trigger word
 )
-pipe2 = pipe2.to("cuda")
+pipe2 = pipe2.to("cpu")
 pipe2.enable_freeu(s1=0.6, s2=0.4, b1=1.1, b2=1.2)
 pipe2.fuse_lora()
 
@@ -482,13 +482,15 @@ def change_visiale_by_model_type(_model_type):
 
 
 ######### Image Generation ##############
-@spaces.GPU(duration=200)
+@spaces.GPU(duration=120)
 def process_generation(_sd_type,_model_type,_upload_images, _num_steps,style_name, _Ip_Adapter_Strength ,_style_strength_ratio, guidance_scale, seed_,  sa32_, sa64_, id_length_,  general_prompt, negative_prompt,prompt_array,G_height,G_width,_comic_type):
     _model_type = "Photomaker" if _model_type == "Using Ref Images" else "original"
     if _model_type == "Photomaker" and "img" not in general_prompt:
         raise gr.Error("Please add the triger word \" img \"  behind the class word you want to customize, such as: man img or woman img")
     if _upload_images is None and _model_type != "original":
         raise gr.Error(f"Cannot find any input face image!")
+    if len(prompt_array) > 10:
+        raise gr.Error(f"No more than 10 prompts in huggface demo for Speed!")
     global sa32, sa64,id_length,total_length,attn_procs,unet,cur_model_type,device
     global write
     global cur_step,attn_count
@@ -500,11 +502,11 @@ def process_generation(_sd_type,_model_type,_upload_images, _num_steps,style_nam
     sd_model_path = models_dict[_sd_type]
     use_safe_tensor = True
     if _model_type == "original":
-        pipe = pipe1
+        pipe = pipe1.to(device)
         set_attention_processor(pipe.unet,id_length_,is_ipadapter = False)
     elif _model_type == "Photomaker":
-        pipe = pipe2
-        pipe2.id_encoder.to("cuda")
+        pipe = pipe2.to(device)
+        pipe.id_encoder.to(device)
         set_attention_processor(pipe.unet,id_length_,is_ipadapter = False)
     else:
         raise NotImplementedError("You should choice between original and Photomaker!",f"But you choice {_model_type}")
@@ -567,7 +569,13 @@ def process_generation(_sd_type,_model_type,_upload_images, _num_steps,style_nam
         captions = [caption.split('#')[-1] if "#" in caption else caption for caption in captions]
         from PIL import ImageFont
         total_results = get_comic(id_images + real_images, _comic_type,captions= captions,font=ImageFont.truetype("./fonts/Inkfree.ttf", int(45))) + total_results
-    set_attention_processor(pipe.unet,id_length_,is_ipadapter = False)
+    if _model_type == "original":
+        pipe = pipe1.to("cpu")
+        set_attention_processor(pipe.unet,id_length_,is_ipadapter = False)
+    elif _model_type == "Photomaker":
+        pipe = pipe2.to("cpu")
+        pipe.id_encoder.to("cpu")
+        set_attention_processor(pipe.unet,id_length_,is_ipadapter = False)
     yield total_results
 
 
@@ -645,14 +653,14 @@ with gr.Blocks(css=css) as demo:
                     G_height = gr.Slider( 
                         label="height",
                         minimum=256,
-                        maximum=1024,
+                        maximum=768,
                         step=32,
                         value=768,
                     )
                     G_width = gr.Slider( 
                         label="width",
                         minimum=256,
-                        maximum=1024,
+                        maximum=768,
                         step=32,
                         value=768,
                     )
@@ -706,7 +714,7 @@ with gr.Blocks(css=css) as demo:
                                 "work in the company",
                                 "Take a walk next to the company at noon",
                                 "lying in bed at night"]),
-                                "Japanese Anime",  "Using Ref Images",get_image_path_list('./examples/taylor'),768,768
+                                "(No style)",  "Using Ref Images",get_image_path_list('./examples/taylor'),768,768
                 ],
                 [0,0.5,0.5,2,"a man, wearing black jacket",
                    "bad anatomy, bad hands, missing fingers, extra fingers, three hands, three legs, bad arms, missing legs, missing arms, poorly drawn face, bad face, fused face, cloned face, three crus, fused feet, fused thigh, extra crus, ugly fingers, horn, cartoon, cg, 3d, unreal, animate, amputation, disconnected limbs",
@@ -717,7 +725,7 @@ with gr.Blocks(css=css) as demo:
                                 "laughing happily",
                                 "lying in bed at night"
                                 ]),
-                                "Japanese Anime","Only Using Textual Description",get_image_path_list('./examples/taylor'),768,768
+                                "(No style)","Only Using Textual Description",get_image_path_list('./examples/taylor'),768,768
                 ],
                 [0,0.3,0.5,2,"a girl, wearing white shirt, black skirt, black tie, yellow hair",
                    "bad anatomy, bad hands, missing fingers, extra fingers, three hands, three legs, bad arms, missing legs, missing arms, poorly drawn face, bad face, fused face, cloned face, three crus, fused feet, fused thigh, extra crus, ugly fingers, horn, cartoon, cg, 3d, unreal, animate, amputation, disconnected limbs",
@@ -729,13 +737,9 @@ with gr.Blocks(css=css) as demo:
                             "look around in the park. # She looks around and enjoys the beauty of nature.",
                             "[NC]leaf falls from the tree, landing on the sketchbook.",
                             "picks up the leaf, examining its details closely.",
-                            "starts sketching the leaf with intricate lines.",
-                            "holds up the sketch drawing of the leaf.",
                             "[NC]The brown squirrel appear.",
                             "is very happy # She is very happy to see the squirrel again",
-                            "[NC]The brown squirrel takes the cracker and scampers up a tree. # She gives the squirrel cracker",
-                            "laughs and tucks the leaf into her book as a keepsake.",
-                            "ready to leave.",]),
+                            "[NC]The brown squirrel takes the cracker and scampers up a tree. # She gives the squirrel cracker"]),
                     "Japanese Anime","Only Using Textual Description",get_image_path_list('./examples/taylor'),768,768
                 ]
                 ],
