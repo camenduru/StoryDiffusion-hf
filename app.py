@@ -502,15 +502,15 @@ def change_visiale_by_model_type(_model_type):
 
 
 ######### Image Generation ##############
-@spaces.GPU(duration=90)
+@spaces.GPU(duration=120)
 def process_generation(_sd_type,_model_type,_upload_images, _num_steps,style_name, _Ip_Adapter_Strength ,_style_strength_ratio, guidance_scale, seed_,  sa32_, sa64_, id_length_,  general_prompt, negative_prompt,prompt_array,G_height,G_width,_comic_type):
     _model_type = "Photomaker" if _model_type == "Using Ref Images" else "original"
     if _model_type == "Photomaker" and "img" not in general_prompt:
         raise gr.Error("Please add the triger word \" img \"  behind the class word you want to customize, such as: man img or woman img")
     if _upload_images is None and _model_type != "original":
         raise gr.Error(f"Cannot find any input face image!")
-    if len(prompt_array.splitlines()) > 6:
-        raise gr.Error(f"No more than 6 prompts in huggface demo for Speed! But found {len(prompt_array.splitlines()) > 6} prompts!")
+    if len(prompt_array.splitlines()) > 10:
+        raise gr.Error(f"No more than 10 prompts in huggface demo for Speed! But found {len(prompt_array.splitlines())} prompts!")
     global sa32, sa64,id_length,total_length,attn_procs,unet,cur_model_type,device
     global num_steps
     global write
@@ -736,6 +736,19 @@ with gr.Blocks(css=css) as demo:
 
     gr.Examples(
         examples=[
+            [0,0.5,0.5,2,"a man, wearing black suit",
+                "bad anatomy, bad hands, missing fingers, extra fingers, three hands, three legs, bad arms, missing legs, missing arms, poorly drawn face, bad face, fused face, cloned face, three crus, fused feet, fused thigh, extra crus, ugly fingers, horn, cartoon, cg, 3d, unreal, animate, amputation, disconnected limbs",
+                array2string(["at home, read new paper #at home, The newspaper says there is a treasure house in the forest.",
+                            "on the road, near the forest",
+                            "[NC] The car on the road, near the forest #He drives to the forest in search of treasure.",
+                            "[NC]A tiger appeared in the forest, at night ",
+                            "very frightened, open mouth, in the forest, at night ",
+                            "running very fast, in the forest, at night "
+                            "[NC] A house in the forest, at night #Suddenly, he discovers the treasure house!",
+                            "in the house filled with  treasure, laughing, at night #He is overjoyed inside the house."
+                            ]),
+                            "Comic book","Only Using Textual Description",get_image_path_list('./examples/taylor'),768,768
+            ],
             [1,0.5,0.5,3,"a woman img, wearing a white T-shirt, blue loose hair",
                    "bad anatomy, bad hands, missing fingers, extra fingers, three hands, three legs, bad arms, missing legs, missing arms, poorly drawn face, bad face, fused face, cloned face, three crus, fused feet, fused thigh, extra crus, ugly fingers, horn, cartoon, cg, 3d, unreal, animate, amputation, disconnected limbs",
                    array2string(["wake up in the bed",
