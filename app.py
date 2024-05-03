@@ -111,7 +111,7 @@ class SpatialAttnProcessor2_0(torch.nn.Module):
         else:
             encoder_hidden_states = torch.cat((self.id_bank[cur_step][0].to(self.device),hidden_states[:1],self.id_bank[cur_step][1].to(self.device),hidden_states[1:]))
         # 判断随机数是否大于0.5
-        if cur_step <0.1* num_steps:
+        if cur_step <=1:
             hidden_states = self.__call2__(attn, hidden_states,None,attention_mask,temb)
         else:   # 256 1024 4096
             random_number = random.random()
@@ -510,7 +510,7 @@ def process_generation(_sd_type,_model_type,_upload_images, _num_steps,style_nam
     if _upload_images is None and _model_type != "original":
         raise gr.Error(f"Cannot find any input face image!")
     if len(prompt_array.splitlines()) > 6:
-        raise gr.Error(f"No more than 6 prompts in huggface demo for Speed! But found {len(prompt_array)} prompts!")
+        raise gr.Error(f"No more than 6 prompts in huggface demo for Speed! But found {len(prompt_array.splitlines()) > 6} prompts!")
     global sa32, sa64,id_length,total_length,attn_procs,unet,cur_model_type,device
     global num_steps
     global write
